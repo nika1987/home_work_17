@@ -5,7 +5,6 @@ from flask_restx import Api, Resource, Namespace
 from flask_sqlalchemy import SQLAlchemy
 from marshmallow import Schema, fields
 
-
 BAS_DIR = os.path.join(os.path.dirname(__file__))
 app = Flask(__name__, instance_path=BAS_DIR)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///test.db'
@@ -62,10 +61,10 @@ class GenreSchema(Schema):
     id = fields.Int()
     name = fields.Str()
 
+
 # Экзепляры MovieSchema для сер-ции и дес-ции в единственном объекте и во множественных объектах.
 movie_schema = MovieSchema()
 movies_schema = MovieSchema(many=True)
-
 
 # Устанавливаем Flask-RESTX. Создаем объект API и CBV для обработки GET-запроса
 api = Api(app)
@@ -77,9 +76,7 @@ genres_ns = Namespace('genres')
 api.add_namespace(genres_ns)
 
 
-
 # Роуты со значениями под наши сущности
-
 @movies_ns.route('/')
 class MovieView(Resource):
     """
@@ -99,18 +96,18 @@ class MovieView(Resource):
             try:
                 movies_by_director = db.session.query(Movie).filter(Movie.director_id == dir_id,
                                                                     Movie.genre_id == gen_id).all()
-                return movies_schema.dumps(movies_by_director), 200
+                return movies_schema.dump(movies_by_director), 200
             except Exception as e:
                 return str(e), 404
         if gen_id:
             try:
                 movies_by_genre = db.session.query(Movie).filter(Movie.genre_id == gen_id).all()
-                return movies_schema.dumps(movies_by_genre), 200
+                return movies_schema.dump(movies_by_genre), 200
             except Exception as e:
                 return str(e), 404
         try:
             movies = db.session.query(Movie).all()
-            return movies_schema.dumps(movies), 200
+            return movies_schema.dump(movies), 200
         except Exception as e:
             return str(e), 404
 
@@ -125,8 +122,6 @@ class MovieView(Resource):
             return str(e), 400
 
 
-
-
 @movies_ns.route('/<int:uid>')
 class MovieView(Resource):
     """
@@ -134,9 +129,10 @@ class MovieView(Resource):
     """
 
     def get(self, uid: int):
+
         try:
             movies = db.session.query(Movie).get(uid)
-            return movie_schema.dumps(movies), 200
+            return movie_schema.dump(movies), 200
         except Exception as e:
             return str(e), 404
 
@@ -149,12 +145,30 @@ class MovieView(Resource):
         except Exception as e:
             return str(e), 404
 
+    def put(self, uid):
+        try:
+            movie = Movie.query.filter_by(id=uid).first()
+            data = request.json
+            movie.title = data['title']
+            movie.description = data['description']
+            movie.trailer = data['trailer']
+            movie.year = data['year']
+            movie.rating = data['rating']
+            movie.genre_id = data['genre_id']
+            movie.director_id = data['director_id']
+            db.session.add(movie)
+            db.session.commit()
+            return " ", 200
+        except Exception as e:
+            return str(e), 404
+
 
 @directors_ns.route('/directors/')
 class DirectorView(Resource):
     """
     возвращает всех режиссеров
     """
+
     def get(self):
         try:
             directors = db.session.query(Director).all()
@@ -168,6 +182,7 @@ class DirectorView(Resource):
     """
     возвращает подробную информацию о режиссере
     """
+
     def get(self, uid: int):
         try:
             director = db.session.query(Director).get(uid)
@@ -175,11 +190,13 @@ class DirectorView(Resource):
         except Exception as e:
             return str(e), 404
 
+
 @genres_ns.route('/genres/')
 class GenreView(Resource):
     """
     возвращает все жанры
     """
+
     def get(self):
         try:
             genres = db.session.query(Genre).all()
@@ -194,14 +211,13 @@ class GenreView(Resource):
     возвращает подробную информацию о жанре
 
     """
+
     def get(self, uid: int):
         try:
             genre = db.session.query(Genre).get(uid)
             return GenreSchema().dump(genre), 200
         except Exception as e:
             return str(e), 404
-
-
 
 
 app.run(debug=True)
