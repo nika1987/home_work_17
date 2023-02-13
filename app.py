@@ -86,26 +86,17 @@ class MovieView(Resource):
     def get(self):
         dir_id = request.values.get('director_id')
         gen_id = request.values.get('genre_id')
-        if dir_id:
-            try:
+        try:
+            if dir_id:
                 movies_by_director = db.session.query(Movie).filter(Movie.director_id == dir_id).all()
                 return movies_schema.dump(movies_by_director), 200
-            except Exception as e:
-                return str(e), 404
-        if dir_id and gen_id:
-            try:
+            if dir_id and gen_id:
                 movies_by_director = db.session.query(Movie).filter(Movie.director_id == dir_id,
                                                                     Movie.genre_id == gen_id).all()
                 return movies_schema.dump(movies_by_director), 200
-            except Exception as e:
-                return str(e), 404
-        if gen_id:
-            try:
+            if gen_id:
                 movies_by_genre = db.session.query(Movie).filter(Movie.genre_id == gen_id).all()
                 return movies_schema.dump(movies_by_genre), 200
-            except Exception as e:
-                return str(e), 404
-        try:
             movies = db.session.query(Movie).all()
             return movies_schema.dump(movies), 200
         except Exception as e:
